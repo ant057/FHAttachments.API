@@ -8,7 +8,14 @@ const dbConfig = {
     port: "1434"
 };
 
-const pool = new sql.ConnectionPool(dbConfig)
+const dbConfig2 = {
+  user:  "filehandleremer",
+  password: "filehandleremer",
+  database: "FHARGO",
+  server: "agii-sqltw06"
+};
+
+const pool = new sql.ConnectionPool(dbConfig2)
   .connect()
   .then(pool => {
     console.log('Connected to MSSQL')
