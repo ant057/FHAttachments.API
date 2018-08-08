@@ -35,7 +35,7 @@ router.route('/user')
         pool
             .then(conn => {
                 const ps = new sql.PreparedStatement(conn)
-                ps.prepare('select top 10 * from FHARGO.dbo.fh_claim_image', err => {
+                ps.prepare('select top 10 * from FHARGO.dbo.fh_claim', err => {
                     ps.execute(null, (err, result) => {
                         if(err) {
                             res.send('There was an error!')
