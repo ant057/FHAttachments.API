@@ -30,12 +30,21 @@ router.route('/')
         res.json({ message: 'hooray! welcome to our api!' })
 })
 
-router.route('/user')
+router.route('/claims/:claimnumber')
     .get(function(req, res){
+        var claimnumber = req.params.claimnumber
         pool
             .then(conn => {
                 const ps = new sql.PreparedStatement(conn)
-                ps.prepare('select top 10 * from FHARGO.dbo.fh_claim', err => {
+                ps.prepare(`select top 10 
+                fh_claim.claim_id
+                ,fh_claim.fh_claim_num
+                ,fh_claim.open_close_status
+                ,fh_policy.policy_num
+                from fh_claim
+                inner join fh_policy on fh_claim.policy_id = fh_policy.policy_id
+                where fh_claim.fh_claim_num like '%${claimnumber}%'
+                order by fh_claim.fh_claim_num desc`, err => {
                     ps.execute(null, (err, result) => {
                         if(err) {
                             res.send('There was an error!')
