@@ -42,9 +42,47 @@ router.route('/claims/:claimnumber')
                 ,fh_claim.open_close_status
                 ,fh_policy.policy_num
                 from fh_claim
-                inner join fh_policy on fh_claim.policy_id = fh_policy.policy_id
+                left outer join fh_policy on fh_claim.policy_id = fh_policy.policy_id
                 where fh_claim.fh_claim_num like '%${claimnumber}%'
                 order by fh_claim.fh_claim_num desc`, err => {
+                    ps.execute(null, (err, result) => {
+                        if(err) {
+                            res.send('There was an error!')
+                            console.warn(err)
+                        }                        
+                        else {
+                            res.send(result);
+                            ps.unprepare(err => {
+
+                            })
+                        }
+                    })
+                })
+            })
+    })
+
+router.route('/claim/:claimnumber')
+    .get(function(req, res){
+        var claimnumber = req.params.claimnumber
+        pool
+            .then(conn => {
+                const ps = new sql.PreparedStatement(conn)
+                ps.prepare(`select 
+                fh_claim.claim_id
+                ,fh_claim.fh_claim_num
+                ,fh_claim.open_close_status
+                ,fh_policy.policy_num
+				,fh_claim.lob_id
+				,fh_user.last_name + ', ' + fh_user.first_name as handler
+				,fh_claim.loss_date
+				,fh_code_general.item_name as claim_type
+				,fh_company.company_name as insured
+                from fh_claim
+                left outer join fh_policy on fh_claim.policy_id = fh_policy.policy_id
+				left outer join fh_company on fh_company.company_id = fh_policy.tier_company_id
+				left outer join fh_user on fh_user.user_id = fh_claim.handler_id
+				left outer join fh_code_general on fh_code_general.item_id = fh_claim.claim_type_id
+                where fh_claim.fh_claim_num like '%${claimnumber}%'`, err => {
                     ps.execute(null, (err, result) => {
                         if(err) {
                             res.send('There was an error!')
