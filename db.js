@@ -15,7 +15,7 @@ const dbConfig2 = {
   server: "agii-sqltw06"
 };
 
-const pool = new sql.ConnectionPool(dbConfig)
+const pool = new sql.ConnectionPool(dbConfig2)
   .connect()
   .then(pool => {
     console.log('Connected to MSSQL')

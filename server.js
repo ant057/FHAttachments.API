@@ -99,6 +99,35 @@ router.route('/claim/:claimnumber')
             })
     })
 
+router.route('/claimattachments/:claimnumber')
+    .get(function(req, res){
+        var claimnumber = req.params.claimnumber
+        pool
+            .then(conn => {
+                const ps = new sql.PreparedStatement(conn)
+                ps.prepare(`select 
+                image_id
+                ,add_date
+                ,image_name
+                ,image_desc
+                from fh_claim_image
+                where claim_id = (select claim_id from fh_claim where fh_claim_num = '${claimnumber}')`, err => {
+                    ps.execute(null, (err, result) => {
+                        if(err) {
+                            res.send('There was an error!')
+                            console.warn(err)
+                        }                        
+                        else {
+                            res.send(result);
+                            ps.unprepare(err => {
+
+                            })
+                        }
+                    })
+                })
+            })
+    })
+
 app.use('/api', router)
 
 
