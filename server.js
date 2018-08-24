@@ -49,6 +49,9 @@ router.route('/claims/:claimnumber')
                         if(err) {
                             res.send('There was an error!')
                             console.warn(err)
+                            ps.unprepare(err => {
+
+                            })
                         }                        
                         else {
                             res.send(result);
@@ -87,6 +90,9 @@ router.route('/claim/:claimnumber')
                         if(err) {
                             res.send('There was an error!')
                             console.warn(err)
+                            ps.unprepare(err => {
+
+                            })
                         }                        
                         else {
                             res.send(result);
@@ -116,6 +122,39 @@ router.route('/claimattachments/:claimnumber')
                         if(err) {
                             res.send('There was an error!')
                             console.warn(err)
+                            ps.unprepare(err => {
+
+                            })
+                        }                        
+                        else {
+                            res.send(result);
+                            ps.unprepare(err => {
+
+                            })
+                        }
+                    })
+                })
+            })
+    })
+
+
+router.route('/claimattachment/:imageid')
+    .get(function(req, res){
+        var imageid = req.params.imageid
+        pool
+            .then(conn => {
+                const ps = new sql.PreparedStatement(conn)
+                ps.prepare(`select 
+                image_bin
+                from fh_claim_image
+                where image_id = '${imageid}'`, err => {
+                    ps.execute(null, (err, result) => {
+                        if(err) {
+                            res.send('There was an error!')
+                            console.warn(err)
+                            ps.unprepare(err => {
+
+                            })
                         }                        
                         else {
                             res.send(result);
