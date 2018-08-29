@@ -5,14 +5,18 @@ const dbConfig = {
     password: "test123!",
     database: "FHARGO",
     server: "localhost",
-    port: "1434"
+    port: "1434",
+    connectionTimeout: 100000,
+    requestTimeout : 100000
 };
 
 const dbConfig2 = {
   user:  "filehandleremer",
   password: "filehandleremer",
   database: "FHARGO",
-  server: "agii-sqltw06"
+  server: "agii-sqltw06",
+  connectionTimeout: 100000,
+  requestTimeout : 10000
 };
 
 const pool = new sql.ConnectionPool(dbConfig)
@@ -24,5 +28,5 @@ const pool = new sql.ConnectionPool(dbConfig)
   .catch(err => console.error('Database Connection Failed!', err))
 
 module.exports = {
-    sql, pool
+    sql, pool 
 }
