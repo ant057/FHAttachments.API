@@ -19,7 +19,7 @@ const dbConfig2 = {
   requestTimeout : 10000
 };
 
-const pool = new sql.ConnectionPool(dbConfig)
+const pool = new sql.ConnectionPool(dbConfig2)
   .connect()
   .then(pool => {
     console.log('Connected to MSSQL')
