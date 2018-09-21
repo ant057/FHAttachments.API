@@ -2,6 +2,8 @@
 const express = require("express")
 const app = express()
 const bodyParser = require("body-parser")
+const multer = require("multer");
+const upload = multer({ storage: multer.memoryStorage() });
 const { sql, pool } = require("./db")
 
 // Body Parser Middleware
@@ -45,6 +47,7 @@ router.route('/claims/:claimnumber')
                                     from fh_claim
                                     left outer join fh_policy on fh_claim.policy_id = fh_policy.policy_id
                                     where fh_claim.fh_claim_num like '%${claimnumber}%'
+                                    and fh_claim.branch_id = 'SUR'
                                     order by fh_claim.fh_claim_num desc`, (err, result) => {
                                 if (err) {
                                     res.send(err)
@@ -132,14 +135,16 @@ router.route('/claimattachment/:imageid')
                     const result = new sql.Request(conn)
                         .query(`select 
                         image_bin
+                        ,image_name
                         from fh_claim_image
                         where image_id = '${imageid}'`, (err, result) => {
                                 if (err) {
                                     res.send(err)
                                 }
                                 else {
-                                    res.set('Content-Type', 'application/pdf');
-                                    res.set('Content-Disposition', 'attachment; filename=test.pdf');
+                                    const mime = getMIMEExtension(result.recordset[0].image_name)
+                                    res.set('Content-Type', mime)
+                                    res.set('Content-Disposition', 'attachment; filename=' + result.recordset[0].image_name)
                                     res.send(result.recordset[0].image_bin)
                                 }
                             })
@@ -149,13 +154,104 @@ router.route('/claimattachment/:imageid')
             })
     })
 
+router.route('/addclaimattachment/:claimnumber')
+    .post(upload.single('file'), function (req, res) {
+        if (!req.file.buffer) {
+            res.json({ message: 'nothing' })
+        }
+        else {
+            //console.log(req.file.buffer)
+            //console.log(req.file)
+            var claimnumber = req.params.claimnumber
+            pool
+                .then(conn => {
+                    try {
+                        var ps = new sql.PreparedStatement(conn)
+
+                        ps.input('imagebin', sql.VarBinary)
+                        ps.input('imagename', sql.VarChar)
+                        ps.input('imagesize', sql.Numeric)
+
+                        ps.prepare(`declare @imageid varchar(15)
+                                select @imageid = cast(cast(current_value as int) as varchar(8)) from tblSequence where Sequence_Column = 'image_id_sur'
+                                set @imageid = 'SUR' + @imageid
+                                select @imageid
+                                
+                                declare @posteduser varchar(15)
+                                select @posteduser = handler_id from fh_claim where fh_claim_num = '${claimnumber}'
+                                
+                                declare @claimid varchar(15)
+                                select @claimid = claim_id from fh_claim where fh_claim_num = '${claimnumber}'
+                                
+                                insert into fh_claim_image
+                                values (@imageid, @claimid, getdate(), @imagename, 'None', @imagebin, @posteduser, 'N', NULL, 'GEN', @imagesize, '', 0, NULL, NULL, NULL, 'N', NULL, NULL, NULL, NULL, NULL)
+                                
+                                update tblSequence set current_value = current_value - 1 where Sequence_Column = 'image_id_sur'`,
+                            function (err) {
+                                if (err) {
+                                    console.log(err)
+                                }
+                                ps.execute({ imagebin: req.file.buffer, imagename: req.file.originalname,  imagesize: req.file.size }, function (err, records) {
+                                    if (err) {
+                                        console.log(err)
+                                    }
+                                    ps.unprepare(function (err) {
+                                        if (err) {
+                                            console.log(err)
+                                        }
+                                        else {
+                                            res.json({ message: 'hooray! we did it!' })
+                                        }
+                                    });
+                                });
+                            });
+                    } catch (err) {
+                        res.send(err.message)
+                    }
+                })
+        }
+    })
+
+//app.post('/api/addclaimattachment', upload.single('file'), (req, res) => {
+//     console.log(req.body);
+//     console.log(req.file);
+//     res.send();
+//   });
+
 app.use('/api', router)
 
 //Ready up server
 var server = app.listen(process.env.PORT || 8080, function () {
-    var port = server.address().port;
-    console.log("App now running on port", port);
+    var port = server.address().port
+    console.log("App now running on port", port)
 })
+
+function getMIMEExtension(fileName) {
+    const ext = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase()
+    switch (ext) {
+        case 'doc': {
+            return 'application/msword'
+        }
+        case 'docx': {
+            return 'application/msword'
+        }
+        case 'msg': {
+            return 'application/vnd.ms-outlook'
+        }
+        case 'pdf': {
+            return 'application/pdf'
+        }
+        case 'xlsx': {
+            return 'application/vnd.ms-excel'
+        }
+        case 'xls': {
+            return 'application/vnd.ms-excel'
+        }
+        default: {
+            return 'text/plain'
+        }
+    }
+}
 
 
 // old: Prepared Statement method
