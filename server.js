@@ -98,6 +98,37 @@ router.route('/claim/:claimnumber')
             })
     })
 
+router.route('/claimparties/:claimnumber')
+    .get(function (req, res) {
+        var claimnumber = req.params.claimnumber
+        pool
+            .then(conn => {
+                try {
+                    const result = new sql.Request(conn)
+                        .query(`select 
+                        fh_party.claim_id
+                        ,fh_party.party_id
+                        ,fh_party.open_close_status
+                        ,fh_party.first_name
+                        ,fh_party.last_name
+                        ,fh_party.facts
+                        ,fh_party.closed_date
+                        ,fh_party.accident_description
+                        from fh_party
+                        where claim_id = (select claim_id from fh_claim where fh_claim_num = '${claimnumber}')`, (err, result) => {
+                                if (err) {
+                                    res.send(err)
+                                }
+                                else {
+                                    res.send(result)
+                                }
+                            })
+                } catch (err) {
+                    res.send(err.message)
+                }
+            })
+    })
+
 router.route('/claimattachments/:claimnumber')
     .get(function (req, res) {
         var claimnumber = req.params.claimnumber
@@ -111,7 +142,8 @@ router.route('/claimattachments/:claimnumber')
                         ,image_name
                         ,image_desc
                         from fh_claim_image
-                        where claim_id = (select claim_id from fh_claim where fh_claim_num = '${claimnumber}')`, (err, result) => {
+                        where claim_id = (select claim_id from fh_claim where fh_claim_num = '${claimnumber}')
+                        order by add_date`, (err, result) => {
                                 if (err) {
                                     res.send(err)
                                 }
@@ -160,8 +192,6 @@ router.route('/addclaimattachment/:claimnumber')
             res.json({ message: 'nothing' })
         }
         else {
-            //console.log(req.file.buffer)
-            //console.log(req.file)
             var claimnumber = req.params.claimnumber
             pool
                 .then(conn => {
@@ -191,7 +221,7 @@ router.route('/addclaimattachment/:claimnumber')
                                 if (err) {
                                     console.log(err)
                                 }
-                                ps.execute({ imagebin: req.file.buffer, imagename: req.file.originalname,  imagesize: req.file.size }, function (err, records) {
+                                ps.execute({ imagebin: req.file.buffer, imagename: req.file.originalname, imagesize: req.file.size }, function (err, records) {
                                     if (err) {
                                         console.log(err)
                                     }
